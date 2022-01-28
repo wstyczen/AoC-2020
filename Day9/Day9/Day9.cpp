@@ -50,8 +50,8 @@ long long sumOfLimitsOfRangeThatSumsTo(const vector<long long>& numbers, long lo
 		for (int j = i; j < numbers.size(); j++) {
 			sum += numbers.at(j);
 			if ((sum == nr) && (j - i > last - first)) {
-					first = i;
-					last = j;
+				first = i;
+				last = j;
 			} else if (sum > nr) {
 				break;
 			}
