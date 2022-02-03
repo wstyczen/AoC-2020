@@ -72,17 +72,6 @@ int howManyOccupiedSeen(const vector<vector<char>>& input, int i, int j, const v
 	return occupiedSeen;
 }
 
-void printState(const vector<vector<char>>& input) {
-	cout << "Current State:" << endl;
-	for (const vector<char> row : input) {
-		for (char c : row) {
-			cout << c;
-		}
-		cout << endl;
-	}
-	cout << endl;
-}
-
 void simulateTillStable(vector<vector<char>>& input, string part) {
 	bool changed = true;
 	vector<vector<char>> newState = {};
