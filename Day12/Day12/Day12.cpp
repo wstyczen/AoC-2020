@@ -36,29 +36,50 @@ enum class direction {
 };
 
 class Point {
-	int x;
-	int y;
-};
-
-class Ship {
-	static std::map<direction, char> charToDirection;
-	direction dir = direction::EAST;
-	int x = 0; int y = 0; // starting position as the point of reference
-	// movements: EAST -> x++; WEST -> x--	|	NORTH -> y++; SOUTH -< y--
+protected:
+	int x; // x > 0: EAST, x < 0: WEST
+	int y; // y > 0: NORTH, y < 0: SOUTH
 public:
-	// Part 1
-	void processCommands(const std::vector<Command>& commands) {
-		std::cout << "Position: " << "(" << this->x << ", " << this->y << ")\t|\t" <<
-			"Facing direction: " << charToDirection.at(this->dir) << std::endl;
- 		for (const Command& cmd : commands) {
-			std::cout << "\t-> Action: " << cmd.action << " | " << "value: " << cmd.value << std::endl;
-			turn(cmd);
-			move(cmd);
-			std::cout << "Position: " << "(" << this->x << ", " << this->y << ")\t|\t" <<
-				"Facing direction: " << charToDirection.at(this->dir) << std::endl;
+	Point(int x_, int y_)
+		: x{ x_ }, y{ y_ }
+	{ }
+	void move(const Command& cmd) {
+		// if action not in (E, S, W, N) no changes are made
+		switch (cmd.action) {
+		case 'E':
+			this->x += cmd.value;
+			break;
+		case 'S':
+			this->y -= cmd.value;
+			break;
+		case 'W':
+			this->x -= cmd.value;
+			break;
+		case 'N':
+			this->y += cmd.value;
+			break;
 		}
 	}
-	void turn(const Command& cmd) {
+	virtual void rotate(const Command& cmd) = 0;
+	int getX() const {
+		return this->x;
+	}
+	int getY() const {
+		return this->y;
+	}
+};
+
+class Ship : public Point {
+	static std::map<direction, char> charToDirection;
+	direction dir = direction::EAST;
+	// starting position as the point of reference
+
+public:
+	Ship(int x_=0, int y_=0)
+		:Point(x_, y_)
+	{}
+	// Part 1
+	virtual void rotate(const Command& cmd) override {
 		// performs the correct turn if command action equals 'R' or 'L', otherwise nothing changes
 		int turn = 0;
 		if (cmd.action == 'R') {
@@ -72,42 +93,40 @@ public:
 	void move(const Command& cmd) {
 		// if action not in (E, S, W, N, F) no changes are made
 		if (cmd.action == 'F') {// to avoid spaghetti code: convert enum direction to char, as in commands and call again
-			move(Command(charToDirection.at(this->dir), cmd.value));
-		}
-		switch (cmd.action) {
-			case 'E':
-				this->x += cmd.value;
-				break;
-			case 'S':
-				this->y -= cmd.value;
-				break;
-			case 'W':
-				this->x -= cmd.value;
-				break;
-			case 'N':
-				this->y += cmd.value;
-				break;
-		}
+			Point::move(Command(charToDirection.at(this->dir), cmd.value));
+		} else Point::move(cmd);
 	}
-	int getManhattanDistance(int startX = 0, int startY = 0) {
-		return std::abs(this->x - startX) + std::abs(this->y - startY);
+	void processCommands(const std::vector<Command>& commands) {
+		/*std::cout << "Position: " << "(" << this->x << ", " << this->y << ")\t|\t" <<
+			"Facing direction: " << charToDirection.at(this->dir) << std::endl;*/
+		for (const Command& cmd : commands) {
+			//std::cout << "\t-> Action: " << cmd.action << " | " << "value: " << cmd.value << std::endl;
+			rotate(cmd);
+			move(cmd);
+			//std::cout << "Position: " << "(" << this->x << ", " << this->y << ")\t|\t" <<
+			//	"Facing direction: " << charToDirection.at(this->dir) << std::endl;
+		}
 	}
 	// Part 2
-	void moveTowardsWaypoint(const Waypoint& waypoint) {
-
+	void moveTowards(const Point& pt, int times) {
+		this->x += pt.getX() * times;
+		this->y += pt.getY() * times;
+	}
+	// both
+	int getManhattanDistance(int startX = 0, int startY = 0) {
+		return std::abs(this->x - startX) + std::abs(this->y - startY);
 	}
 };
 
 std::map<direction, char> Ship::charToDirection = { {direction::EAST, 'E'}, {direction::SOUTH, 'S'},
 	{direction::WEST, 'W'}, {direction::NORTH, 'N'} };
 
-class Waypoint {
-	int x; // x > 0: EAST, x < 0: WEST
-	int y; // y > 0: NORTH, y < 0: SOUTH
+class Waypoint : public Point {
+public:
 	Waypoint(int startX = 10, int startY = 1)
-		:x{startX}, y{startY}
+		: Point(startX, startY)
 	{}
-	void rotate(const Command& command) {
+	virtual void rotate(const Command& cmd) override {
 		int turn = 0; 
 		if (cmd.action == 'R') {
 			turn = cmd.value / 90;
@@ -123,13 +142,36 @@ class Waypoint {
 			this->y = -subst;
 		}
 	}
-	
 };
+
+int part1(const std::vector<Command>& commands) {
+	Ship ship;
+	ship.processCommands(commands);
+	return ship.getManhattanDistance();
+}
+
+int part2(const std::vector<Command>& commands) {
+	Ship ship;
+	Waypoint wpt;
+	for (const Command& cmd : commands) {
+		if (cmd.action == 'F') {
+			ship.moveTowards(wpt, cmd.value);
+		}
+		else if (cmd.action == 'R' || cmd.action == 'L') {
+			wpt.rotate(cmd);
+		}
+		else { // move (E, S, W, N)
+			wpt.move(cmd);
+		}
+	}
+	return ship.getManhattanDistance();
+}
 
 int main() {
 	std::vector<Command> commands = getCommands("input.txt");
-	Ship ship;
-	ship.processCommands(commands);
-	std::cout << "Part 1: " << ship.getManhattanDistance() << std::endl;
+	
+	std::cout << "Part 1: " << part1(commands) << std::endl;
+	std::cout << "Part 2: " << part2(commands) << std::endl;
+
 	return 0;
 }
