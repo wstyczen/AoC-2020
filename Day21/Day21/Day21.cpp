@@ -133,13 +133,6 @@ int main() {
 	std::vector<Food> foods = getInput("input.txt");
 	
 	std::cout << "Part 1:\t" << getCountOfSafeIngredientsAppearances(foods) << std::endl;
-
-	std::cout << "\nIngredients and their respective allergens:\n";
-	std::unordered_map<std::string, std::string> decodedAllergensMap = getDecodedAllergensMap(foods);
-	for (const auto& pair : decodedAllergensMap) {
-		std::cout << pair.second << " -> " << pair.first << std::endl;
-	}
-
 	std::cout << "\nPart 2:\t" << toString(getCanonicalDangerousIngredientList(foods)) << std::endl;
 
 	return 0;
